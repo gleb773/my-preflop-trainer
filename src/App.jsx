@@ -85,7 +85,6 @@ function App() {
   const [inputModal, setInputModal] = useState({ isOpen: false, type: '', level: '', oldName: '', title: '' });
   const [inputValue, setInputValue] = useState("");
   
-  // Принудительный фокус для окна создания/переименования
   const inputRef = useRef(null);
   useEffect(() => {
     if (inputModal.isOpen && inputRef.current) {
@@ -191,7 +190,6 @@ function App() {
   const [importAction, setImportAction] = useState("Raise");
   const [clearBeforeImport, setClearBeforeImport] = useState(true);
 
-  // Принудительный фокус для окна импорта (Ctrl+V)
   const importTextRef = useRef(null);
   useEffect(() => {
     if (showImport && importTextRef.current) {
@@ -559,9 +557,7 @@ function App() {
             <div className="settings-block">
               <h4>База данных (Бэкап)</h4>
               <div style={{display: 'flex', gap: '10px', marginTop: '10px'}}>
-                {/* Исправлен контраст: теперь кнопка синяя с белым текстом */}
                 <button className="btn call" onClick={exportBackup} style={{flex: 1}}>💾 Скачать Базу</button>
-                {/* Исправлен контраст: теперь кнопка темно-серая с белым текстом */}
                 <label className="btn fold" style={{flex: 1, textAlign: 'center', cursor: 'pointer'}}>📂 Загрузить Базу <input type="file" accept=".json" style={{display: 'none'}} onChange={importBackup} /></label>
               </div>
             </div>
@@ -596,7 +592,6 @@ function App() {
               </label>
             </div>
             <div className="modal-btns">
-              {/* Исправлен контраст: Отмена - темно-серая, Импорт - синяя */}
               <button className="btn fold" onClick={() => setShowImport(false)}>Отмена</button>
               <button className="btn call" onClick={processImport}>Импорт</button>
             </div>
@@ -616,7 +611,6 @@ function App() {
               className="custom-input" 
             />
             <div className="modal-btns">
-              {/* Исправлен контраст: Отмена - темно-серая, Сохранить - синяя */}
               <button className="btn fold" onClick={() => setInputModal({ ...inputModal, isOpen: false })}>Отмена</button>
               <button className="btn call" onClick={submitInputModal}>Сохранить</button>
             </div>
@@ -636,7 +630,8 @@ function App() {
           <div className="tree-level"><span className="tree-label">СИТУАЦИЯ:</span><select value={activeSit} onChange={(e) => setActiveSit(e.target.value)} disabled={!activeCat}>{activeCat && ranges[activeCat] ? Object.keys(ranges[activeCat]).map(sit => <option key={sit} value={sit}>{sit}</option>) : null}</select>
             {!isLocked && activeCat && <div className="crud-icons"><span onClick={() => openCreateModal('sit')}>➕</span><span onClick={() => openRenameModal('sit')}>✏️</span><span onClick={() => handleDelete('sit')}>🗑️</span></div>}
           </div>
-          <div className="tree-level"><span className="tree-label">СПОТ:</span><select value={activeSpot} onChange={(e) => setActiveSpot(e.target.value)} disabled={!activeSit}>{activeCat && activeSit && ranges[activeCat][activeSit] ? Object.keys(ranges[activeCat][activeSit]).map(spot => <option key={spot} value={spot}>{spot}</option>) : null}</select>
+          {/* ВОТ ЗДЕСЬ ИСПРАВЛЕНА ОШИБКА БЕЛОГО ЭКРАНА (добавлен ? перед .[activeSit]) */}
+          <div className="tree-level"><span className="tree-label">СПОТ:</span><select value={activeSpot} onChange={(e) => setActiveSpot(e.target.value)} disabled={!activeSit}>{activeCat && activeSit && ranges[activeCat]?.[activeSit] ? Object.keys(ranges[activeCat][activeSit]).map(spot => <option key={spot} value={spot}>{spot}</option>) : null}</select>
             {!isLocked && activeSit && <div className="crud-icons"><span onClick={() => openCreateModal('spot')}>➕</span><span onClick={() => openRenameModal('spot')}>✏️</span><span onClick={() => handleDelete('spot')}>🗑️</span></div>}
           </div>
           
@@ -734,8 +729,8 @@ function App() {
              <div style={{height: '30px', margin: '10px 0'}}><p className="message">{message}</p></div>
 
              <div className="board-cards" onClick={() => setShowMatrix(!showMatrix)}>
-                <PlayingCard rank={currentCards[0].rank} suit={currentCards[0].suit} />
-                <PlayingCard rank={currentCards[1].rank} suit={currentCards[1].suit} />
+                 <PlayingCard rank={currentCards[0].rank} suit={currentCards[0].suit} />
+                 <PlayingCard rank={currentCards[1].rank} suit={currentCards[1].suit} />
              </div>
              <div style={{fontSize: '0.8rem', color: '#9ca3af', marginTop: '-20px', marginBottom: '20px'}}>Кликните по картам, чтобы подглядеть ренж</div>
 
@@ -803,7 +798,6 @@ function App() {
            </div>
           
           <div style={{display: 'flex', gap: '15px', marginTop: '30px'}}>
-             {/* Исправлен контраст: Повторить - синяя, Вернуться - темно-серая */}
              <button className="btn call" style={{width: '200px'}} onClick={startSession}>Повторить сессию</button>
              <button className="btn fold" style={{width: '200px'}} onClick={returnToEditor}>Вернуться в редактор</button>
           </div>
@@ -823,7 +817,6 @@ function App() {
               </div>
             ))}
           </div>
-          {/* Статистика теперь рендерится и в редакторе, и в тренажере */}
           {renderStats()} 
         </>
       )}
