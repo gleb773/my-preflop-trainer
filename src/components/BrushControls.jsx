@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { clampPct } from '../utils/weights';
 
 /** Поле ввода %: значение применяется по Enter или при потере фокуса */
-function PercentInput({ value, onCommit }) {
+function PercentInput({ value, onCommit, onFocus }) {
   const [draft, setDraft] = useState(String(value));
   const commit = () => {
     const normalized = draft.replace(',', '.').trim();
@@ -17,8 +17,7 @@ function PercentInput({ value, onCommit }) {
       inputMode="decimal"
       className="percent-input"
       value={draft}
-      onClick={e => e.stopPropagation()}
-      onFocus={e => e.target.select()}
+      onFocus={e => { e.target.select(); onFocus(); }}
       onChange={e => setDraft(e.target.value)}
       onBlur={commit}
       onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); if (e.key === 'Escape') { setDraft(String(value)); e.target.blur(); } }}
@@ -47,7 +46,7 @@ export default function BrushControls({ weights, activeAction, colors, onChange,
               className="custom-range"
             />
             {/* key сбрасывает черновик, когда значение меняется снаружи (ползунком) */}
-            <PercentInput key={weights[action]} value={weights[action]} onCommit={v => onChange(action, v)} />
+            <PercentInput key={weights[action]} value={weights[action]} onCommit={v => onChange(action, v)} onFocus={() => onSelect(action)} />
             <span className="percent-sign">%</span>
           </div>
         ))}
