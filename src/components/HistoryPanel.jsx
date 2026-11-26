@@ -1,5 +1,92 @@
 import { useState, useMemo } from 'react';
 import { formatTime, spotKey } from '../utils/format';
+import { dayKey, keyToDate } from '../utils/activity';
+
+const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
+/** Календарь занятий на месяц с переключением месяцев */
+function ActivityCalendar({ activity, goal, today }) {
+  const todayDate = keyToDate(today);
+  const [offset, setOffset] = useState(0); // 0 — текущий месяц, -1 — прошлый…
+  const first = new Date(todayDate.getFullYear(), todayDate.getMonth() + offset, 1);
+  const daysInMonth = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+  const lead = (first.getDay() + 6) % 7; // пустые клетки до понедельника
+
+  // самый ранний месяц с занятиями — дальше назад листать незачем
+  const earliest = Object.keys(activity).sort()[0];
+  const earliestDate = earliest ? keyToDate(earliest) : todayDate;
+  const canPrev = first > new Date(earliestDate.getFullYear(), earliestDate.getMonth(), 1);
+
+  const title = first.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' }).replace(' г.', '');
+  const levelOf = (hands) => (!hands ? 0 : hands < goal ? 1 : hands < goal * 2 ? 2 : 3);
+
+  let monthHands = 0, monthDone = 0;
+  const cells = [];
+  for (let i = 0; i < lead; i++) cells.push(<div key={`e${i}`} className="cal-cell empty" />);
+  for (let d = 1; d <= daysInMonth; d++) {
+    const k = dayKey(new Date(first.getFullYear(), first.getMonth(), d));
+    const hands = activity[k] || 0;
+    const future = k > today;
+    monthHands += hands;
+    if (hands >= goal) monthDone++;
+    cells.push(
+      <div
+        key={k}
+        className={`cal-cell lvl-${levelOf(hands)} ${k === today ? 'today' : ''} ${future ? 'future' : ''}`}
+        title={future ? undefined : `${keyToDate(k).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'long' })}: ${hands} рук${hands >= goal ? ' — норма выполнена ✅' : ''}`}
+      >
+        <span className="cal-num">{d}</span>
+        {hands > 0 && <span className="cal-hands">{hands >= goal ? '✅' : hands}</span>}
+      </div>,
+    );
+  }
+
+  return (
+    <div className="month-calendar">
+      <div className="cal-header">
+        <button className="cal-nav" onClick={() => setOffset(o => o - 1)} disabled={!canPrev} title="Предыдущий месяц">‹</button>
+        <div className="cal-title">
+          <span>{title}</span>
+          <small>{monthDone} дн. с нормой · {monthHands} рук</small>
+        </div>
+        <button className="cal-nav" onClick={() => setOffset(o => o + 1)} disabled={offset >= 0} title="Следующий месяц">›</button>
+      </div>
+      <div className="cal-grid">
+        {WEEKDAYS.map(w => <div key={w} className="cal-weekday">{w}</div>)}
+        {cells}
+      </div>
+    </div>
+  );
+}
+
+function RegularityBlock({ daily, activity, today }) {
+  const pct = Math.min(100, Math.round((daily.todayHands / daily.goal) * 100));
+  return (
+    <div className="regularity-block">
+      <div className="summary-stats">
+        <div className={`stat-box ${daily.atRisk ? 'stat-risk' : ''}`}>
+          <span>Серия дней</span>
+          <strong style={{ color: daily.current ? '#10b981' : undefined }}>{daily.atRisk ? '⚠️' : '📅'} {daily.current}</strong>
+        </div>
+        <div className="stat-box"><span>Рекорд дней</span><strong>🏆 {daily.longest}</strong></div>
+        <div className="stat-box"><span>Всего дней</span><strong>{daily.totalDays}</strong></div>
+        <div className="stat-box">
+          <span>Сегодня</span>
+          <strong>{daily.todayHands}/{daily.goal}</strong>
+          <div className="day-progress"><div style={{ width: `${pct}%` }} className={daily.todayDone ? 'done' : ''} /></div>
+        </div>
+      </div>
+      {daily.atRisk && <p className="risk-hint">⚠️ Сегодня норма ещё не выполнена — позанимайтесь, чтобы не прервать серию.</p>}
+      <ActivityCalendar activity={activity} goal={daily.goal} today={today} />
+      <div className="calendar-legend">
+        <span className="legend-swatch lvl-0" /> нет занятий
+        <span className="legend-swatch lvl-1" /> меньше нормы
+        <span className="legend-swatch lvl-2" /> норма
+        <span className="legend-swatch lvl-3" /> 2× нормы
+      </div>
+    </div>
+  );
+}
 const accuracyOf = (s) => (s.hands > 0 ? Math.round(((s.hands - s.errors) / s.hands) * 100) : 0);
 
 function AccuracyChart({ sessions }) {
@@ -32,7 +119,7 @@ function AccuracyChart({ sessions }) {
   );
 }
 
-export default function HistoryPanel({ history, onDeleteSession, onClearHistory, onBack }) {
+export default function HistoryPanel({ history, daily, activity, today, onDeleteSession, onClearHistory, onBack }) {
   const spots = useMemo(() => [...new Set(history.map(spotKey))], [history]);
   const [filter, setFilter] = useState('');
   const activeFilter = spots.includes(filter) ? filter : '';
@@ -63,6 +150,9 @@ export default function HistoryPanel({ history, onDeleteSession, onClearHistory,
     <div className="summary-panel history-panel">
       <h2>📈 История тренировок</h2>
 
+      <h4 className="history-subtitle">Регулярность</h4>
+      <RegularityBlock daily={daily} activity={activity} today={today} />
+
       {history.length === 0 ? (
         <p className="history-hint">Пока нет сохранённых сессий. Завершите тренировку — она появится здесь.</p>
       ) : (
@@ -86,7 +176,10 @@ export default function HistoryPanel({ history, onDeleteSession, onClearHistory,
           <h4 className="history-subtitle">Точность по сессиям</h4>
           <AccuracyChart sessions={sessions} />
 
-          {totals.worst.length > 0 && (
+          {!activeFilter && (
+            <p className="history-hint" style={{ marginTop: 20 }}>Выберите спот, чтобы увидеть самые частые ошибки по нему.</p>
+          )}
+          {activeFilter && totals.worst.length > 0 && (
             <>
               <h4 className="history-subtitle">Самые частые ошибки</h4>
               <div className="worst-hands">

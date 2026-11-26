@@ -3,6 +3,8 @@ export const STORAGE_KEYS = {
   colors: 'pokerColorsV12',
   hotkeys: 'pokerHotkeysV12',
   history: 'pokerHistoryV1',
+  activity: 'pokerActivityV1',
+  dailyGoal: 'pokerDailyGoalV1',
   autoBackup: 'pokerRangesV12_autobackup',
 };
 
@@ -25,6 +27,7 @@ export function validateBackup(data) {
     }
   }
   if (data.history !== undefined && !Array.isArray(data.history)) return 'Раздел history поврежден';
+  if (data.activity !== undefined && !isPlainObject(data.activity)) return 'Раздел activity поврежден';
   return null;
 }
 

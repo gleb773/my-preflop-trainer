@@ -24,9 +24,13 @@ function HotkeyInput({ action, value, color, onChange }) {
 }
 
 export default function SettingsModal({
-  hotkeys, setHotkeys, colors, combosOn, setCombosOn, soundOn, setSoundOn, onExport, onImportFile, autoBackupInfo, onRestoreAutoBackup, onClose,
+  hotkeys, setHotkeys, colors, combosOn, setCombosOn, soundOn, setSoundOn, dailyGoal, setDailyGoal, onExport, onImportFile, autoBackupInfo, onRestoreAutoBackup, onClose,
 }) {
   const [warning, setWarning] = useState('');
+  const [goalDraft, setGoalDraft] = useState(String(dailyGoal));
+  const goalNum = Number(goalDraft);
+  const goalInvalid = !/^\d{1,4}$/.test(goalDraft.trim()) || goalNum < 1 || goalNum > 1000;
+  const commitGoal = () => { if (goalInvalid) setGoalDraft(String(dailyGoal)); else setDailyGoal(goalNum); };
 
   const changeHotkey = (action, key) => {
     const taken = Object.entries(hotkeys).find(([a, k]) => a !== action && k === key);
@@ -60,6 +64,21 @@ export default function SettingsModal({
           <label className={`settings-toggle ${combosOn ? '' : 'disabled'}`}>
             <input type="checkbox" checked={soundOn} disabled={!combosOn} onChange={e => setSoundOn(e.target.checked)} />
             Звуки комбо
+          </label>
+        </div>
+        <div className="settings-block">
+          <h4>Ежедневная норма</h4>
+          <label className="settings-toggle">
+            <input
+              type="text" inputMode="numeric"
+              className={`percent-input goal-input ${goalInvalid ? 'invalid' : ''}`}
+              value={goalDraft}
+              title={goalInvalid ? 'Введите число от 1 до 1000' : undefined}
+              onChange={e => setGoalDraft(e.target.value)}
+              onBlur={commitGoal}
+              onKeyDown={e => { if (e.key === 'Enter' && !goalInvalid) e.target.blur(); }}
+            />
+            рук в день — чтобы день засчитался в серию 📅
           </label>
         </div>
         <div className="settings-block">

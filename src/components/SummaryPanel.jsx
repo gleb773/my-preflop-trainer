@@ -1,11 +1,26 @@
+import { useState, useEffect } from 'react';
 import HandGrid from './HandGrid';
 import Tooltip from './Tooltip';
 import { useHoverTooltip } from '../hooks/useHoverTooltip';
 import { getCellBackground } from '../utils/cellStyle';
 import { formatTime } from '../utils/format';
+import ComboAnnouncer from './ComboAnnouncer';
+import { playComboSound } from '../utils/comboSound';
 
-export default function SummaryPanel({ session, spotData, colors, onRepeat, onBack }) {
+export default function SummaryPanel({ session, spotData, colors, combosOn = true, soundOn = true, onRepeat, onBack }) {
   const { hover, onMove, onLeave } = useHoverTooltip();
+  const day = session.day;
+  const celebrate = combosOn && day?.reached;
+  const [announce, setAnnounce] = useState(() => (celebrate
+    ? { id: 1, kind: 'record', text: `DAY ${day.streak} STREAK`, level: 2, subtitle: 'DAILY GOAL COMPLETE' }
+    : null));
+
+  useEffect(() => {
+    if (!celebrate) return;
+    if (soundOn) playComboSound(2);
+    const t = setTimeout(() => setAnnounce(null), 1600);
+    return () => clearTimeout(t);
+  }, [celebrate, soundOn]);
   const { hands, errors, durationSec, answerTimeSec, perHand } = session;
   const correct = hands - errors;
   const accuracy = hands > 0 ? Math.round((correct / hands) * 100) : 0;
@@ -25,7 +40,17 @@ export default function SummaryPanel({ session, spotData, colors, onRepeat, onBa
           <div className="tooltip-row tooltip-session"><span>Сессия:</span><span>{perHand[h].attempts - perHand[h].errors}/{perHand[h].attempts}</span></div>
         )}
       />
+      <ComboAnnouncer key={announce?.id} event={announce} />
       <h2>Итоги тренировки: {session.spot}</h2>
+      {day && (
+        <div className={`day-banner ${day.reached ? 'reached' : ''}`}>
+          {day.reached
+            ? <>📅 Норма дня выполнена! Серия: <strong>{day.streak}</strong> {day.streak === 1 ? 'день' : 'дн.'} подряд</>
+            : day.todayHands >= day.goal
+              ? <>📅 Норма дня уже выполнена · сегодня {day.todayHands} рук · серия {day.streak} дн.</>
+              : <>📅 Сегодня: <strong>{day.todayHands}/{day.goal}</strong> рук — ещё {day.goal - day.todayHands} до нормы дня</>}
+        </div>
+      )}
       <div className="summary-stats">
         <div className="stat-box"><span>Время</span><strong>{formatTime(durationSec)}</strong></div>
         <div className="stat-box"><span>Ср. время ответа</span><strong>{avgTime} сек</strong></div>

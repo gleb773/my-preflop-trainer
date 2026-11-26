@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import './App.css';
 import EditorView from './components/EditorView';
 import TrainerPanel from './components/TrainerPanel';
@@ -8,6 +8,9 @@ import SettingsModal from './components/modals/SettingsModal';
 import { usePersistentState } from './hooks/usePersistentState';
 import { normalizeHotkeys, DEFAULT_HOTKEYS } from './utils/hotkeys';
 import { STORAGE_KEYS, validateBackup, countSpots, downloadJson, backupFilename } from './utils/backup';
+import {
+  dayKey, computeDailyStreak, buildActivityFromHistory, normalizeActivity, normalizeGoal, DEFAULT_DAILY_GOAL,
+} from './utils/activity';
 
 const DEFAULT_RANGES = {
   'Cash 100bb': {
@@ -20,6 +23,15 @@ const DEFAULT_COLORS = { Allin: '#f59e0b', Raise: '#ef4444', Call: '#4ade80', Fo
 const normalizeColors = (c) => ({ ...DEFAULT_COLORS, ...(c && typeof c === 'object' ? c : {}) });
 const normalizeHistory = (h) => (Array.isArray(h) ? h : []);
 const firstKey = (obj) => (obj ? Object.keys(obj)[0] || '' : '');
+
+// Дни занятий: при первом запуске заполняем из уже накопленной истории
+function initialActivity() {
+  try {
+    return buildActivityFromHistory(JSON.parse(localStorage.getItem(STORAGE_KEYS.history) || '[]'));
+  } catch {
+    return {};
+  }
+}
 
 function readAutoBackupInfo() {
   try {
@@ -40,6 +52,18 @@ function App() {
   const [history, setHistory] = usePersistentState(STORAGE_KEYS.history, [], normalizeHistory);
   const [combosOn, setCombosOn] = usePersistentState('pokerCombosOn', true);
   const [soundOn, setSoundOn] = usePersistentState('pokerSoundOn', true);
+  const [activity, setActivity] = usePersistentState(STORAGE_KEYS.activity, initialActivity, normalizeActivity);
+  const [dailyGoal, setDailyGoal] = usePersistentState(STORAGE_KEYS.dailyGoal, DEFAULT_DAILY_GOAL, normalizeGoal);
+  const [today, setToday] = useState(() => dayKey());
+  const daily = useMemo(() => computeDailyStreak(activity, dailyGoal, today), [activity, dailyGoal, today]);
+
+  // Обновляем «сегодня», если вкладка была открыта через полночь
+  useEffect(() => {
+    const refresh = () => setToday(dayKey());
+    window.addEventListener('focus', refresh);
+    const timer = setInterval(refresh, 60 * 1000);
+    return () => { window.removeEventListener('focus', refresh); clearInterval(timer); };
+  }, []);
 
   const [mode, setMode] = useState('editor'); // editor | trainer | summary | history
   const [showSettings, setShowSettings] = useState(false);
@@ -90,16 +114,26 @@ function App() {
   };
 
   const finishSession = (session) => {
-    if (session.hands > 0) setHistory(prev => [...prev, session]);
-    setLastSession(session);
+    const todayKey = dayKey();
+    setToday(todayKey);
+    let day = null;
+    if (session.hands > 0) {
+      setHistory(prev => [...prev, session]);
+      const nextActivity = { ...activity, [todayKey]: (activity[todayKey] || 0) + session.hands };
+      setActivity(nextActivity);
+      const before = computeDailyStreak(activity, dailyGoal, todayKey);
+      const after = computeDailyStreak(nextActivity, dailyGoal, todayKey);
+      day = { reached: !before.todayDone && after.todayDone, streak: after.current, todayHands: after.todayHands, goal: dailyGoal };
+    }
+    setLastSession({ ...session, day });
     setMode('summary');
   };
 
   // --- Бэкап ---
-  const exportBackup = () => downloadJson({ ranges, actionColors, hotkeys, history }, backupFilename());
+  const exportBackup = () => downloadJson({ ranges, actionColors, hotkeys, history, activity, dailyGoal }, backupFilename());
 
   const saveAutoBackup = () => {
-    const snapshot = { ranges, actionColors, hotkeys, history, savedAt: new Date().toISOString() };
+    const snapshot = { ranges, actionColors, hotkeys, history, activity, dailyGoal, savedAt: new Date().toISOString() };
     try {
       localStorage.setItem(STORAGE_KEYS.autoBackup, JSON.stringify(snapshot));
       setAutoBackupInfo(new Date(snapshot.savedAt).toLocaleString('ru-RU'));
@@ -115,6 +149,8 @@ function App() {
     if (data.actionColors) setActionColors(normalizeColors(data.actionColors));
     if (data.hotkeys) setHotkeys(normalizeHotkeys(data.hotkeys));
     if (Array.isArray(data.history)) setHistory(data.history);
+    if (data.activity) setActivity(normalizeActivity(data.activity));
+    if (data.dailyGoal !== undefined) setDailyGoal(normalizeGoal(data.dailyGoal));
   };
 
   const importBackup = (file) => {
@@ -167,11 +203,24 @@ function App() {
           onExport={exportBackup} onImportFile={importBackup}
           autoBackupInfo={autoBackupInfo} onRestoreAutoBackup={restoreAutoBackup}
           combosOn={combosOn} setCombosOn={setCombosOn} soundOn={soundOn} setSoundOn={setSoundOn}
+          dailyGoal={dailyGoal} setDailyGoal={setDailyGoal}
           onClose={() => setShowSettings(false)}
         />
       )}
 
       <div className="top-bar">
+        <button
+          className={`daily-badge ${daily.atRisk ? 'at-risk' : ''} ${daily.todayDone ? 'done' : ''}`}
+          onClick={() => { if (mode !== 'trainer') setMode('history'); }}
+          title={[
+            `Серия: ${daily.current} дн. подряд · рекорд: ${daily.longest}`,
+            `Сегодня: ${daily.todayHands}/${daily.goal} рук`,
+            daily.atRisk ? '⚠️ Выполните норму сегодня, чтобы не прервать серию' : '',
+          ].filter(Boolean).join('\n')}
+        >
+          {daily.atRisk ? '⚠️' : '📅'} {daily.current}
+          <span className="daily-progress">{Math.min(daily.todayHands, daily.goal)}/{daily.goal}</span>
+        </button>
         {mode !== 'trainer' && mode !== 'history' && (
           <button className="settings-btn" onClick={() => setMode('history')}>📈 История</button>
         )}
@@ -203,6 +252,7 @@ function App() {
       {mode === 'summary' && lastSession && (
         <SummaryPanel
           session={lastSession} spotData={spotData} colors={actionColors}
+          combosOn={combosOn} soundOn={soundOn}
           onRepeat={startSession} onBack={() => setMode('editor')}
         />
       )}
@@ -210,6 +260,7 @@ function App() {
       {mode === 'history' && (
         <HistoryPanel
           history={history}
+          daily={daily} activity={activity} today={today}
           onDeleteSession={id => { if (window.confirm('Удалить эту сессию из истории?')) setHistory(prev => prev.filter(s => s.id !== id)); }}
           onClearHistory={() => { if (window.confirm('Удалить всю историю тренировок? Ренжи не пострадают.')) setHistory([]); }}
           onBack={() => setMode('editor')}
