@@ -1,26 +1,48 @@
 import { useState } from 'react';
-import { clampPct } from '../utils/weights';
+import { round2 } from '../utils/weights';
 
-/** Поле ввода %: значение применяется по Enter или при потере фокуса */
+/** Разбирает ввод: число 0–100, не больше 2 знаков после точки/запятой. Иначе null. */
+function parsePercent(text) {
+  const s = text.trim().replace(',', '.');
+  if (!/^\d{1,3}(\.\d{0,2})?$/.test(s)) return null;
+  const v = Number(s);
+  return v >= 0 && v <= 100 ? round2(v) : null;
+}
+
+/**
+ * Поле ввода %: значение применяется по Enter или при потере фокуса.
+ * Некорректное значение подсвечивается красным и не применяется.
+ */
 function PercentInput({ value, onCommit, onFocus }) {
   const [draft, setDraft] = useState(String(value));
-  const commit = () => {
-    const normalized = draft.replace(',', '.').trim();
-    if (normalized === '' || !Number.isFinite(Number(normalized))) { setDraft(String(value)); return; }
-    const v = clampPct(normalized);
-    if (v === value) setDraft(String(value));
-    else onCommit(v);
+  const parsed = parsePercent(draft);
+  const invalid = draft.trim() !== '' && parsed === null;
+
+  const revert = () => setDraft(String(value));
+  const apply = () => {
+    if (parsed === null) return false;
+    if (parsed === value) revert();
+    else onCommit(parsed);
+    return true;
   };
+
   return (
     <input
       type="text"
       inputMode="decimal"
-      className="percent-input"
+      className={`percent-input ${invalid ? 'invalid' : ''}`}
+      title={invalid ? 'Введите число от 0 до 100' : undefined}
+      aria-invalid={invalid}
       value={draft}
       onFocus={e => { e.target.select(); onFocus(); }}
       onChange={e => setDraft(e.target.value)}
-      onBlur={commit}
-      onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); if (e.key === 'Escape') { setDraft(String(value)); e.target.blur(); } }}
+      // при уходе из поля с ошибкой — возвращаем прежнее значение
+      onBlur={() => { if (!apply()) revert(); }}
+      onKeyDown={e => {
+        // Enter с ошибкой: остаёмся в поле, значение не применяется
+        if (e.key === 'Enter' && parsed !== null) e.target.blur();
+        if (e.key === 'Escape') { revert(); setTimeout(() => e.target.blur()); }
+      }}
     />
   );
 }

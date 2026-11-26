@@ -161,3 +161,4 @@ body { margin: 0; background-color: #111827; color: #f3f4f6; }
 .history-table td.history-spot { white-space: normal; }
 .history-delete { cursor: pointer; opacity: 0.6; }
 .history-delete:hover { opacity: 1; }
+.percent-input.invalid, .percent-input.invalid:focus { border-color: #ef4444; color: #fca5a5; background: rgba(239, 68, 68, 0.15); box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.35); }
