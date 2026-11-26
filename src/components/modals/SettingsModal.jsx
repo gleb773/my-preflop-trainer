@@ -24,7 +24,7 @@ function HotkeyInput({ action, value, color, onChange }) {
 }
 
 export default function SettingsModal({
-  hotkeys, setHotkeys, colors, onExport, onImportFile, autoBackupInfo, onRestoreAutoBackup, onClose,
+  hotkeys, setHotkeys, colors, combosOn, setCombosOn, soundOn, setSoundOn, onExport, onImportFile, autoBackupInfo, onRestoreAutoBackup, onClose,
 }) {
   const [warning, setWarning] = useState('');
 
@@ -50,6 +50,17 @@ export default function SettingsModal({
             ))}
           </div>
           {warning && <p className="settings-warning">{warning}</p>}
+        </div>
+        <div className="settings-block">
+          <h4>Серии побед (комбо)</h4>
+          <label className="settings-toggle">
+            <input type="checkbox" checked={combosOn} onChange={e => setCombosOn(e.target.checked)} />
+            Показывать серии и надписи (COMBO, FATALITY…)
+          </label>
+          <label className={`settings-toggle ${combosOn ? '' : 'disabled'}`}>
+            <input type="checkbox" checked={soundOn} disabled={!combosOn} onChange={e => setSoundOn(e.target.checked)} />
+            Звуки комбо
+          </label>
         </div>
         <div className="settings-block">
           <h4>База данных (Бэкап)</h4>

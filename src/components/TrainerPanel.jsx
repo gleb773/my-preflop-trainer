@@ -8,7 +8,6 @@ import { getActivePool, pickRandom, pickWeightedHand, dealCards } from '../utils
 import { getWeights, getCellBackground } from '../utils/cellStyle';
 import { codeToHotkey, normalizeHotkey } from '../utils/hotkeys';
 import ComboAnnouncer from './ComboAnnouncer';
-import { usePersistentState } from '../hooks/usePersistentState';
 import { getStreakTier, getStreakLevel, BREAKER_MIN_STREAK, RECORD_MIN } from '../utils/streaks';
 import { playComboSound, playBreakerSound, playRecordSound } from '../utils/comboSound';
 
@@ -42,7 +41,7 @@ function evaluate(handData, userAction, trainerMode, dice) {
   return { isCorrect: false, msg: `❌ Ошибка! (Кубик: ${dice} → ${target})` };
 }
 
-export default function TrainerPanel({ cat, sit, spot, spotData, colors, hotkeys, hotkeysEnabled, historyStats, spotRecord = 0, onFinish }) {
+export default function TrainerPanel({ cat, sit, spot, spotData, colors, hotkeys, hotkeysEnabled, historyStats, spotRecord = 0, combosOn = true, soundOn = true, setSoundOn, onFinish }) {
   const pool = useMemo(() => getActivePool(spotData), [spotData]);
 
   const [trainerMode, setTrainerMode] = useState('Simple');
@@ -59,7 +58,6 @@ export default function TrainerPanel({ cat, sit, spot, spotData, colors, hotkeys
   const [streak, setStreak] = useState(0);
   const [announce, setAnnounce] = useState(null);
   const [shakeId, setShakeId] = useState(0);
-  const [soundOn, setSoundOn] = usePersistentState('pokerSoundOn', true);
 
   const answeringRef = useRef(false);
   const timeoutRef = useRef(null);
@@ -110,6 +108,7 @@ export default function TrainerPanel({ cat, sit, spot, spotData, colors, hotkeys
       streakRef.current = s;
       bestStreakRef.current = Math.max(bestStreakRef.current, s);
       setStreak(s);
+      if (!combosOn) return;
       const tier = getStreakTier(s);
       const isNewRecord = !recordShownRef.current && spotRecord >= RECORD_MIN && s > spotRecord;
       if (isNewRecord) recordShownRef.current = true;
@@ -124,12 +123,12 @@ export default function TrainerPanel({ cat, sit, spot, spotData, colors, hotkeys
       const lost = streakRef.current;
       streakRef.current = 0;
       setStreak(0);
-      if (lost >= BREAKER_MIN_STREAK) {
+      if (combosOn && lost >= BREAKER_MIN_STREAK) {
         showAnnounce({ kind: 'breaker', text: 'COMBO BREAKER', level: 2, subtitle: `${lost} HIT COMBO` });
         if (soundOn) playBreakerSound();
       }
     }
-  }, [spotRecord, soundOn, showAnnounce]);
+  }, [spotRecord, combosOn, soundOn, showAnnounce]);
 
   const handleAction = useCallback((userAction) => {
     if (answeringRef.current) return; // защита от двойного ответа
@@ -206,11 +205,11 @@ export default function TrainerPanel({ cat, sit, spot, spotData, colors, hotkeys
           onClick={() => setRepeatErrors(!repeatErrors)}
           title="Руки, на которых были ошибки (в этой сессии и в истории), выпадают чаще"
         >🔁 Повтор ошибок</button>
-        <button className="pos-btn" onClick={() => setSoundOn(!soundOn)} title={soundOn ? 'Выключить звук' : 'Включить звук'}>{soundOn ? '🔊' : '🔇'}</button>
+        {combosOn && <button className="pos-btn" onClick={() => setSoundOn(!soundOn)} title={soundOn ? 'Выключить звук' : 'Включить звук'}>{soundOn ? '🔊' : '🔇'}</button>}
       </div>
 
       <div key={shakeId} className={`trainer-board ${shakeId ? 'board-shake' : ''}`}>
-        {streak >= 2 && (
+        {combosOn && streak >= 2 && (
           <div className={`streak-badge streak-level-${getStreakLevel(streak)}`} title={`Серия: ${streak} верных подряд`}>🔥 {streak}</div>
         )}
         <div className="board-header"><span className="board-cat">{cat}</span><span className="board-sit">{sit}</span></div>

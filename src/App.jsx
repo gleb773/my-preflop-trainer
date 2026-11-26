@@ -38,6 +38,8 @@ function App() {
   const [actionColors, setActionColors] = usePersistentState(STORAGE_KEYS.colors, DEFAULT_COLORS, normalizeColors);
   const [hotkeys, setHotkeys] = usePersistentState(STORAGE_KEYS.hotkeys, DEFAULT_HOTKEYS, normalizeHotkeys);
   const [history, setHistory] = usePersistentState(STORAGE_KEYS.history, [], normalizeHistory);
+  const [combosOn, setCombosOn] = usePersistentState('pokerCombosOn', true);
+  const [soundOn, setSoundOn] = usePersistentState('pokerSoundOn', true);
 
   const [mode, setMode] = useState('editor'); // editor | trainer | summary | history
   const [showSettings, setShowSettings] = useState(false);
@@ -164,6 +166,7 @@ function App() {
           hotkeys={hotkeys} setHotkeys={setHotkeys} colors={actionColors}
           onExport={exportBackup} onImportFile={importBackup}
           autoBackupInfo={autoBackupInfo} onRestoreAutoBackup={restoreAutoBackup}
+          combosOn={combosOn} setCombosOn={setCombosOn} soundOn={soundOn} setSoundOn={setSoundOn}
           onClose={() => setShowSettings(false)}
         />
       )}
@@ -192,6 +195,7 @@ function App() {
           colors={actionColors} hotkeys={hotkeys} hotkeysEnabled={!showSettings}
           historyStats={historyStats}
           spotRecord={spotRecord}
+          combosOn={combosOn} soundOn={soundOn} setSoundOn={setSoundOn}
           onFinish={finishSession}
         />
       )}
