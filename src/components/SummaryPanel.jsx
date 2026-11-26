@@ -33,6 +33,7 @@ export default function SummaryPanel({ session, spotData, colors, onRepeat, onBa
         <div className="stat-box"><span>Верных</span><strong style={{ color: '#10b981' }}>{correct}</strong></div>
         <div className="stat-box"><span>Ошибок</span><strong style={{ color: '#ef4444' }}>{errors}</strong></div>
         <div className="stat-box"><span>Качество</span><strong>{accuracy}%</strong></div>
+        <div className="stat-box"><span>Лучшая серия</span><strong style={{ color: '#f59e0b' }}>🔥 {session.bestStreak || 0}</strong></div>
       </div>
 
       <h4 style={{ marginTop: '20px', marginBottom: '15px', color: '#9ca3af', textAlign: 'center' }}>Анализ рук (Наведите курсор на ячейку)</h4>

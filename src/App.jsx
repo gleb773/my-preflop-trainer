@@ -66,6 +66,11 @@ function App() {
     return stats;
   }, [history, cat, sit, spot]);
 
+  // Рекорд серии по текущему споту
+  const spotRecord = useMemo(() => history.reduce(
+    (best, s) => (s.cat === cat && s.sit === sit && s.spot === spot ? Math.max(best, s.bestStreak || 0) : best), 0,
+  ), [history, cat, sit, spot]);
+
   // При переименовании обновляем записи истории, чтобы прогресс не потерялся
   const handleRenamePath = (level, oldName, newName, ctx) => {
     setHistory(prev => prev.map(s => {
@@ -186,6 +191,7 @@ function App() {
           cat={cat} sit={sit} spot={spot} spotData={spotData}
           colors={actionColors} hotkeys={hotkeys} hotkeysEnabled={!showSettings}
           historyStats={historyStats}
+          spotRecord={spotRecord}
           onFinish={finishSession}
         />
       )}

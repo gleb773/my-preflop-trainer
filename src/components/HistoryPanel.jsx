@@ -43,10 +43,11 @@ export default function HistoryPanel({ history, onDeleteSession, onClearHistory,
   );
 
   const totals = useMemo(() => {
-    let hands = 0, errors = 0, time = 0;
+    let hands = 0, errors = 0, time = 0, bestStreak = 0;
     const perHand = {};
     sessions.forEach(s => {
       hands += s.hands; errors += s.errors; time += s.durationSec;
+      bestStreak = Math.max(bestStreak, s.bestStreak || 0);
       Object.entries(s.perHand || {}).forEach(([h, d]) => {
         perHand[h] = { attempts: (perHand[h]?.attempts || 0) + d.attempts, errors: (perHand[h]?.errors || 0) + d.errors };
       });
@@ -55,7 +56,7 @@ export default function HistoryPanel({ history, onDeleteSession, onClearHistory,
       .filter(([, d]) => d.errors > 0)
       .sort((a, b) => b[1].errors / b[1].attempts - a[1].errors / a[1].attempts || b[1].errors - a[1].errors)
       .slice(0, 12);
-    return { hands, errors, time, worst };
+    return { hands, errors, time, worst, bestStreak };
   }, [sessions]);
 
   return (
@@ -79,6 +80,7 @@ export default function HistoryPanel({ history, onDeleteSession, onClearHistory,
             <div className="stat-box"><span>Рук</span><strong>{totals.hands}</strong></div>
             <div className="stat-box"><span>Точность</span><strong>{totals.hands ? Math.round(((totals.hands - totals.errors) / totals.hands) * 100) : 0}%</strong></div>
             <div className="stat-box"><span>Общее время</span><strong>{formatTime(totals.time)}</strong></div>
+            <div className="stat-box"><span>Рекорд серии</span><strong style={{ color: '#f59e0b' }}>🔥 {totals.bestStreak}</strong></div>
           </div>
 
           <h4 className="history-subtitle">Точность по сессиям</h4>
@@ -101,7 +103,7 @@ export default function HistoryPanel({ history, onDeleteSession, onClearHistory,
           <div className="history-table-wrap">
             <table className="history-table">
               <thead>
-                <tr><th>Дата</th><th>Спот</th><th>Режим</th><th>Рук</th><th>Точность</th><th>Время</th><th></th></tr>
+                <tr><th>Дата</th><th>Спот</th><th>Режим</th><th>Рук</th><th>Точность</th><th>Серия</th><th>Время</th><th></th></tr>
               </thead>
               <tbody>
                 {[...sessions].reverse().map(s => (
@@ -111,6 +113,7 @@ export default function HistoryPanel({ history, onDeleteSession, onClearHistory,
                     <td>{s.trainerMode === 'RNG' ? 'RNG' : 'Простой'}{s.repeatErrors ? ' 🔁' : ''}</td>
                     <td>{s.hands}</td>
                     <td style={{ color: accuracyOf(s) >= 90 ? '#10b981' : accuracyOf(s) >= 70 ? '#f59e0b' : '#ef4444' }}>{accuracyOf(s)}%</td>
+                    <td>{s.bestStreak !== undefined ? `🔥 ${s.bestStreak}` : '—'}</td>
                     <td>{formatTime(s.durationSec)}</td>
                     <td><span className="history-delete" title="Удалить сессию" onClick={() => onDeleteSession(s.id)}>🗑️</span></td>
                   </tr>

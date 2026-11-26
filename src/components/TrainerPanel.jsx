@@ -7,8 +7,13 @@ import { useHoverTooltip } from '../hooks/useHoverTooltip';
 import { getActivePool, pickRandom, pickWeightedHand, dealCards } from '../utils/hands';
 import { getWeights, getCellBackground } from '../utils/cellStyle';
 import { codeToHotkey, normalizeHotkey } from '../utils/hotkeys';
+import ComboAnnouncer from './ComboAnnouncer';
+import { usePersistentState } from '../hooks/usePersistentState';
+import { getStreakTier, getStreakLevel, BREAKER_MIN_STREAK, RECORD_MIN } from '../utils/streaks';
+import { playComboSound, playBreakerSound, playRecordSound } from '../utils/comboSound';
 
 const NEXT_HAND_DELAY = 1500;
+const ANNOUNCE_DURATION = { 1: 1100, 2: 1300, 3: 1400, 4: 1500 };
 const ACTION_ORDER = ['Fold', 'Call', 'Raise', 'Allin'];
 
 function rollDice() { return Math.floor(Math.random() * 100) + 1; }
@@ -37,7 +42,7 @@ function evaluate(handData, userAction, trainerMode, dice) {
   return { isCorrect: false, msg: `❌ Ошибка! (Кубик: ${dice} → ${target})` };
 }
 
-export default function TrainerPanel({ cat, sit, spot, spotData, colors, hotkeys, hotkeysEnabled, historyStats, onFinish }) {
+export default function TrainerPanel({ cat, sit, spot, spotData, colors, hotkeys, hotkeysEnabled, historyStats, spotRecord = 0, onFinish }) {
   const pool = useMemo(() => getActivePool(spotData), [spotData]);
 
   const [trainerMode, setTrainerMode] = useState('Simple');
@@ -51,6 +56,10 @@ export default function TrainerPanel({ cat, sit, spot, spotData, colors, hotkeys
   const [isAnswering, setIsAnswering] = useState(false);
   const [session, setSession] = useState({});
   const { hover, onMove, onLeave } = useHoverTooltip();
+  const [streak, setStreak] = useState(0);
+  const [announce, setAnnounce] = useState(null);
+  const [shakeId, setShakeId] = useState(0);
+  const [soundOn, setSoundOn] = usePersistentState('pokerSoundOn', true);
 
   const answeringRef = useRef(false);
   const timeoutRef = useRef(null);
@@ -59,12 +68,16 @@ export default function TrainerPanel({ cat, sit, spot, spotData, colors, hotkeys
   const startTimeRef = useRef(null);
   const handShownAtRef = useRef(null);
   const answerTimeRef = useRef(0);
+  const streakRef = useRef(0);
+  const bestStreakRef = useRef(0);
+  const recordShownRef = useRef(false);
+  const announceTimeoutRef = useRef(null);
 
   useEffect(() => {
     const now = Date.now();
     startTimeRef.current = now;
     handShownAtRef.current = now;
-    return () => clearTimeout(timeoutRef.current);
+    return () => { clearTimeout(timeoutRef.current); clearTimeout(announceTimeoutRef.current); };
   }, []);
 
   const nextHand = useCallback(() => {
@@ -82,6 +95,42 @@ export default function TrainerPanel({ cat, sit, spot, spotData, colors, hotkeys
     handShownAtRef.current = Date.now();
   }, [repeatErrors, pool, historyStats]);
 
+  const showAnnounce = useCallback((ev) => {
+    const level = ev.level || 1;
+    setAnnounce({ ...ev, id: Date.now() + Math.random() });
+    if (level >= 3 || ev.kind === 'breaker') setShakeId(id => id + 1);
+    clearTimeout(announceTimeoutRef.current);
+    announceTimeoutRef.current = setTimeout(() => setAnnounce(null), ANNOUNCE_DURATION[level] || 1200);
+  }, []);
+
+  /** Обновляет серию и запускает надписи/звуки */
+  const updateStreak = useCallback((isCorrect) => {
+    if (isCorrect) {
+      const s = streakRef.current + 1;
+      streakRef.current = s;
+      bestStreakRef.current = Math.max(bestStreakRef.current, s);
+      setStreak(s);
+      const tier = getStreakTier(s);
+      const isNewRecord = !recordShownRef.current && spotRecord >= RECORD_MIN && s > spotRecord;
+      if (isNewRecord) recordShownRef.current = true;
+      if (tier) {
+        showAnnounce({ kind: 'combo', text: tier.text, level: tier.level, subtitle: isNewRecord ? 'NEW RECORD!' : undefined });
+        if (soundOn) { playComboSound(tier.level); if (isNewRecord) setTimeout(playRecordSound, 350); }
+      } else if (isNewRecord) {
+        showAnnounce({ kind: 'record', text: 'NEW RECORD!', level: 1, subtitle: `${s} in a row` });
+        if (soundOn) playRecordSound();
+      }
+    } else {
+      const lost = streakRef.current;
+      streakRef.current = 0;
+      setStreak(0);
+      if (lost >= BREAKER_MIN_STREAK) {
+        showAnnounce({ kind: 'breaker', text: 'COMBO BREAKER', level: 2, subtitle: `${lost} HIT COMBO` });
+        if (soundOn) playBreakerSound();
+      }
+    }
+  }, [spotRecord, soundOn, showAnnounce]);
+
   const handleAction = useCallback((userAction) => {
     if (answeringRef.current) return; // защита от двойного ответа
     answeringRef.current = true;
@@ -94,6 +143,7 @@ export default function TrainerPanel({ cat, sit, spot, spotData, colors, hotkeys
     const prev = sessionRef.current[hand] || { attempts: 0, errors: 0 };
     sessionRef.current = { ...sessionRef.current, [hand]: { attempts: prev.attempts + 1, errors: prev.errors + (isCorrect ? 0 : 1) } };
     setSession(sessionRef.current);
+    updateStreak(isCorrect);
 
     if (!isCorrect && repeatErrors && !errorQueueRef.current.some(q => q.hand === hand)) {
       errorQueueRef.current.push({ hand, dueIn: 3 + Math.floor(Math.random() * 3) });
@@ -107,7 +157,7 @@ export default function TrainerPanel({ cat, sit, spot, spotData, colors, hotkeys
       answeringRef.current = false;
       setIsAnswering(false);
     }, NEXT_HAND_DELAY);
-  }, [deal, spotData, trainerMode, repeatErrors, nextHand]);
+  }, [deal, spotData, trainerMode, repeatErrors, nextHand, updateStreak]);
 
   // Горячие клавиши (сравниваем физическую клавишу — работает в любой раскладке)
   useEffect(() => {
@@ -134,6 +184,7 @@ export default function TrainerPanel({ cat, sit, spot, spotData, colors, hotkeys
       date: new Date().toISOString(),
       cat, sit, spot, trainerMode, repeatErrors,
       hands, errors,
+      bestStreak: bestStreakRef.current,
       durationSec: Math.round((Date.now() - startTimeRef.current) / 1000),
       answerTimeSec: Math.round(answerTimeRef.current / 100) / 10,
       perHand,
@@ -146,6 +197,7 @@ export default function TrainerPanel({ cat, sit, spot, spotData, colors, hotkeys
   return (
     <div className="trainer-panel">
       <Tooltip hover={hover} spotData={spotData} colors={colors} />
+      <ComboAnnouncer key={announce?.id} event={announce} />
       <div className="trainer-controls">
         <button className={`pos-btn ${trainerMode === 'Simple' ? 'active' : ''}`} onClick={() => setTrainerMode('Simple')}>Простой режим</button>
         <button className={`pos-btn ${trainerMode === 'RNG' ? 'active' : ''}`} onClick={() => setTrainerMode('RNG')}>RNG режим</button>
@@ -154,9 +206,13 @@ export default function TrainerPanel({ cat, sit, spot, spotData, colors, hotkeys
           onClick={() => setRepeatErrors(!repeatErrors)}
           title="Руки, на которых были ошибки (в этой сессии и в истории), выпадают чаще"
         >🔁 Повтор ошибок</button>
+        <button className="pos-btn" onClick={() => setSoundOn(!soundOn)} title={soundOn ? 'Выключить звук' : 'Включить звук'}>{soundOn ? '🔊' : '🔇'}</button>
       </div>
 
-      <div className="trainer-board">
+      <div key={shakeId} className={`trainer-board ${shakeId ? 'board-shake' : ''}`}>
+        {streak >= 2 && (
+          <div className={`streak-badge streak-level-${getStreakLevel(streak)}`} title={`Серия: ${streak} верных подряд`}>🔥 {streak}</div>
+        )}
         <div className="board-header"><span className="board-cat">{cat}</span><span className="board-sit">{sit}</span></div>
         <div className="board-spot-title">{spot}</div>
         <div className="live-stats">Рук: {liveHands} · Ошибок: {liveErrors}</div>

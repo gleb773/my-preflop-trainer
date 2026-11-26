@@ -162,3 +162,75 @@ body { margin: 0; background-color: #111827; color: #f3f4f6; }
 .history-delete { cursor: pointer; opacity: 0.6; }
 .history-delete:hover { opacity: 1; }
 .percent-input.invalid, .percent-input.invalid:focus { border-color: #ef4444; color: #fca5a5; background: rgba(239, 68, 68, 0.15); box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.35); }
+
+/* --- СЕРИИ / КОМБО --- */
+.trainer-board { position: relative; }
+.streak-badge { position: absolute; top: 14px; right: 16px; font-weight: 900; font-size: 1.1rem; padding: 4px 12px; border-radius: 999px; background: #111827; border: 2px solid #4b5563; color: #f3f4f6; animation: badge-pop 0.25s ease-out; }
+.streak-level-1 { border-color: #f59e0b; color: #fbbf24; }
+.streak-level-2 { border-color: #f97316; color: #fdba74; box-shadow: 0 0 12px rgba(249, 115, 22, 0.5); }
+.streak-level-3 { border-color: #ef4444; color: #fecaca; box-shadow: 0 0 18px rgba(239, 68, 68, 0.7); font-size: 1.25rem; }
+.streak-level-4 { border-color: #fde047; color: #fff; background: linear-gradient(135deg, #7f1d1d, #b91c1c); box-shadow: 0 0 26px rgba(253, 224, 71, 0.8); font-size: 1.35rem; }
+@keyframes badge-pop { from { transform: scale(1.5); } to { transform: scale(1); } }
+
+.combo-overlay { position: fixed; inset: 0; z-index: 9000; pointer-events: none; display: flex; align-items: center; justify-content: center; }
+.combo-text-wrap { display: flex; flex-direction: column; align-items: center; transform: skewX(-12deg); animation: combo-in 1.2s cubic-bezier(0.2, 1.4, 0.4, 1) forwards; }
+.combo-text {
+  font-family: Impact, 'Arial Black', 'Segoe UI Black', sans-serif; font-weight: 900; font-style: italic; letter-spacing: 3px; text-transform: uppercase; white-space: nowrap;
+  font-size: clamp(2rem, 6vw, 3.5rem); line-height: 1;
+  background: linear-gradient(180deg, #fff7ae 0%, #fde047 30%, #f97316 65%, #b91c1c 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 3px 0 #000) drop-shadow(0 0 12px rgba(249, 115, 22, 0.8));
+  -webkit-text-stroke: 1px rgba(0, 0, 0, 0.6);
+}
+.combo-subtitle { margin-top: 8px; font-family: Impact, 'Arial Black', sans-serif; font-style: italic; font-size: clamp(1rem, 2.5vw, 1.4rem); letter-spacing: 4px; color: #fde047; text-shadow: 0 2px 0 #000, 0 0 10px rgba(253, 224, 71, 0.8); }
+
+/* нарастание по уровням */
+.combo-level-1 .combo-text-wrap { margin-top: -38vh; }
+.combo-level-1 .combo-text { font-size: clamp(1.6rem, 4vw, 2.4rem); }
+.combo-level-2 .combo-text { font-size: clamp(2.2rem, 7vw, 4rem); }
+.combo-level-3 .combo-text { font-size: clamp(2.6rem, 9vw, 5rem); }
+.combo-level-4 { background: radial-gradient(circle, rgba(127, 29, 29, 0.55) 0%, rgba(0, 0, 0, 0.85) 75%); animation: combo-dim 1.5s ease-out forwards; }
+.combo-level-4 .combo-text { font-size: clamp(3rem, 12vw, 7.5rem); letter-spacing: 6px; }
+.combo-level-4 .combo-text-wrap { animation-duration: 1.5s; }
+
+.combo-flash { position: absolute; inset: 0; background: radial-gradient(circle, rgba(253, 224, 71, 0.45), transparent 70%); animation: combo-flash 0.5s ease-out forwards; }
+
+/* COMBO BREAKER и рекорд */
+.combo-breaker .combo-text { background: linear-gradient(180deg, #fecaca 0%, #ef4444 50%, #450a0a 100%); -webkit-background-clip: text; background-clip: text; filter: drop-shadow(0 3px 0 #000) drop-shadow(0 0 14px rgba(239, 68, 68, 0.9)); }
+.combo-breaker .combo-text-wrap { animation-name: combo-break; }
+.combo-breaker .combo-subtitle { color: #fca5a5; text-shadow: 0 2px 0 #000; }
+.combo-record .combo-text { background: linear-gradient(180deg, #ecfccb 0%, #a3e635 50%, #15803d 100%); -webkit-background-clip: text; background-clip: text; filter: drop-shadow(0 3px 0 #000) drop-shadow(0 0 12px rgba(163, 230, 53, 0.8)); }
+
+@keyframes combo-in {
+  0% { opacity: 0; transform: skewX(-12deg) scale(2.6); }
+  15% { opacity: 1; transform: skewX(-12deg) scale(0.92); }
+  25% { transform: skewX(-12deg) scale(1.04); }
+  80% { opacity: 1; transform: skewX(-12deg) scale(1); }
+  100% { opacity: 0; transform: skewX(-12deg) scale(1.08) translateY(-10px); }
+}
+@keyframes combo-break {
+  0% { opacity: 0; transform: skewX(-12deg) translateX(-40px); }
+  10% { opacity: 1; transform: skewX(-12deg) translateX(14px) rotate(-3deg); }
+  20% { transform: skewX(-12deg) translateX(-8px) rotate(2deg); }
+  30% { transform: skewX(-12deg) translateX(0) rotate(-1deg); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: skewX(-12deg) translateY(30px) rotate(4deg); }
+}
+@keyframes combo-flash { from { opacity: 1; } to { opacity: 0; } }
+@keyframes combo-dim { 0% { opacity: 0; } 10% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+
+.board-shake { animation: board-shake 0.45s ease-in-out; }
+@keyframes board-shake {
+  0%, 100% { transform: translate(0, 0); }
+  15% { transform: translate(-8px, 3px) rotate(-0.6deg); }
+  30% { transform: translate(7px, -3px) rotate(0.5deg); }
+  45% { transform: translate(-5px, 2px); }
+  60% { transform: translate(4px, -1px); }
+  80% { transform: translate(-2px, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-shake, .combo-flash, .streak-badge { animation: none; }
+  .combo-text-wrap, .combo-breaker .combo-text-wrap { animation: combo-fade 1.2s linear forwards; }
+  @keyframes combo-fade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
+}
