@@ -1,0 +1,84 @@
+import { useState } from 'react';
+import { codeToHotkey, normalizeHotkey } from '../../utils/hotkeys';
+
+const ACTION_LABELS = { Fold: 'Fold', Call: 'Call', Raise: 'Raise', Allin: 'All-in' };
+
+function HotkeyInput({ action, value, color, onChange }) {
+  return (
+    <div>
+      <label style={{ color }}>{ACTION_LABELS[action]}</label>
+      <input
+        readOnly
+        value={value}
+        title="Нажмите клавишу (латиница A–Z или цифра)"
+        onKeyDown={e => {
+          if (e.key === 'Tab') return;
+          e.preventDefault();
+          // Берём физическую клавишу: при русской раскладке всё равно получаем латиницу
+          const key = codeToHotkey(e.code) || normalizeHotkey(e.key);
+          if (key) onChange(action, key);
+        }}
+      />
+    </div>
+  );
+}
+
+export default function SettingsModal({
+  hotkeys, setHotkeys, colors, onExport, onImportFile, autoBackupInfo, onRestoreAutoBackup, onClose,
+}) {
+  const [warning, setWarning] = useState('');
+
+  const changeHotkey = (action, key) => {
+    const taken = Object.entries(hotkeys).find(([a, k]) => a !== action && k === key);
+    if (taken) {
+      setWarning(`Клавиша ${key} уже назначена на ${ACTION_LABELS[taken[0]]}`);
+      return;
+    }
+    setWarning('');
+    setHotkeys({ ...hotkeys, [action]: key });
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <h3>⚙️ Настройки Тренажера</h3>
+        <div className="settings-block">
+          <h4>Горячие клавиши (кликните в поле и нажмите клавишу)</h4>
+          <div className="hotkeys-grid">
+            {['Fold', 'Call', 'Raise', 'Allin'].map(a => (
+              <HotkeyInput key={a} action={a} value={hotkeys[a]} color={colors[a]} onChange={changeHotkey} />
+            ))}
+          </div>
+          {warning && <p className="settings-warning">{warning}</p>}
+        </div>
+        <div className="settings-block">
+          <h4>База данных (Бэкап)</h4>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+            <button className="btn call" onClick={onExport} style={{ flex: 1 }}>💾 Скачать Базу</button>
+            <label className="btn fold" style={{ flex: 1, textAlign: 'center', cursor: 'pointer' }}>
+              📂 Загрузить Базу
+              <input
+                type="file"
+                accept=".json,application/json"
+                style={{ display: 'none' }}
+                onChange={e => {
+                  const file = e.target.files[0];
+                  e.target.value = ''; // чтобы тот же файл можно было выбрать снова
+                  if (file) onImportFile(file);
+                }}
+              />
+            </label>
+          </div>
+          {autoBackupInfo && (
+            <button className="btn restore-btn" onClick={onRestoreAutoBackup}>
+              ↩️ Вернуть базу, которая была до последней загрузки ({autoBackupInfo})
+            </button>
+          )}
+        </div>
+        <div className="modal-btns" style={{ marginTop: '20px' }}>
+          <button className="btn fold" onClick={onClose}>Закрыть</button>
+        </div>
+      </div>
+    </div>
+  );
+}
