@@ -7,13 +7,16 @@ import { formatTime } from '../utils/format';
 import ComboAnnouncer from './ComboAnnouncer';
 import { playComboSound } from '../utils/comboSound';
 
-export default function SummaryPanel({ session, spotData, colors, combosOn = true, soundOn = true, onRepeat, onBack }) {
+export default function SummaryPanel({ session, spotData, colors, combosOn = true, soundOn = true, onRepeat, onBack, onNextPlanSpot }) {
   const { hover, onMove, onLeave } = useHoverTooltip();
   const day = session.day;
-  const celebrate = combosOn && day?.reached;
-  const [announce, setAnnounce] = useState(() => (celebrate
-    ? { id: 1, kind: 'record', text: `DAY ${day.streak} STREAK`, level: 2, subtitle: 'DAILY GOAL COMPLETE' }
-    : null));
+  const plan = session.plan;
+  const celebrate = combosOn && (day?.reached || plan?.dayReached);
+  const [announce, setAnnounce] = useState(() => {
+    if (!celebrate) return null;
+    if (plan?.dayReached) return { id: 1, kind: 'record', text: 'PLAN COMPLETE', level: 2, subtitle: day?.reached ? `DAY ${day.streak} STREAK` : 'ALL SPOTS DONE' };
+    return { id: 1, kind: 'record', text: `DAY ${day.streak} STREAK`, level: 2, subtitle: 'DAILY GOAL COMPLETE' };
+  });
 
   useEffect(() => {
     if (!celebrate) return;
@@ -42,6 +45,13 @@ export default function SummaryPanel({ session, spotData, colors, combosOn = tru
       />
       <ComboAnnouncer key={announce?.id} event={announce} />
       <h2>Итоги тренировки: {session.spot}</h2>
+      {plan && (
+        <div className={`day-banner plan-banner ${plan.dayComplete ? 'reached' : ''}`}>
+          {plan.dayComplete
+            ? <>📚 План на сегодня выполнен! Все споты дня пройдены.</>
+            : <>📚 Следующий спот плана: <strong>{plan.nextLabel}</strong></>}
+        </div>
+      )}
       {day && (
         <div className={`day-banner ${day.reached ? 'reached' : ''}`}>
           {day.reached
@@ -83,7 +93,8 @@ export default function SummaryPanel({ session, spotData, colors, combosOn = tru
       </div>
 
       <div style={{ display: 'flex', gap: '15px', marginTop: '30px', flexWrap: 'wrap', justifyContent: 'center' }}>
-        <button className="btn call" style={{ width: '200px' }} onClick={onRepeat}>Повторить сессию</button>
+        {onNextPlanSpot && <button className="btn call plan-next-btn" style={{ width: '260px' }} onClick={onNextPlanSpot}>▶ Следующий спот плана</button>}
+        <button className={`btn ${onNextPlanSpot ? 'fold' : 'call'}`} style={{ width: '200px' }} onClick={onRepeat}>Повторить сессию</button>
         <button className="btn fold" style={{ width: '200px' }} onClick={onBack}>Вернуться в редактор</button>
       </div>
     </div>

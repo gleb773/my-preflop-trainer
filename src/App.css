@@ -286,3 +286,85 @@ body { margin: 0; background-color: #111827; color: #f3f4f6; }
 .legend-swatch.lvl-1 { background: #3f2d0c; }
 .legend-swatch.lvl-2 { background: #166534; }
 .legend-swatch.lvl-3 { background: #16a34a; }
+
+/* --- ПЛАН ОБУЧЕНИЯ --- */
+.plan-panel { max-width: 860px; }
+.plan-field { display: flex; align-items: center; gap: 10px; font-weight: 600; color: #e5e7eb; }
+.plan-field small { color: #9ca3af; }
+.plan-name { width: 100%; margin-bottom: 15px; }
+.plan-name span { white-space: nowrap; }
+.plan-settings { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; background: #111827; padding: 14px; border-radius: 8px; width: 100%; box-sizing: border-box; }
+.plan-number { width: 64px; text-align: center; font-size: 1rem; padding: 6px 8px; }
+.plan-order { display: flex; align-items: center; gap: 8px; margin-top: 15px; flex-wrap: wrap; justify-content: center; }
+.plan-order > span { color: #9ca3af; font-weight: 600; }
+.plan-order .pos-btn { background: #111827; }
+.plan-order .pos-btn.active { background: #2563eb; color: white; }
+.plan-order-hint { font-size: 0.85rem; margin-top: 6px; }
+
+.plan-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%; margin-top: 10px; }
+@media (max-width: 700px) { .plan-columns { grid-template-columns: 1fr; } }
+.plan-tree, .plan-selected { background: #111827; border: 1px solid #374151; border-radius: 8px; padding: 10px 14px; max-height: 420px; overflow-y: auto; text-align: left; }
+.plan-tree .history-subtitle, .plan-selected .history-subtitle { margin-top: 4px; }
+.plan-cat-title { font-weight: 800; cursor: pointer; padding: 6px 0; color: #f3f4f6; user-select: none; }
+.plan-sit { margin: 4px 0 8px 14px; }
+.plan-check { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 3px 0; font-size: 0.92rem; }
+.plan-check input { width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; }
+.plan-sit-title { font-weight: 700; color: #a5b4fc; }
+.plan-spot { margin-left: 22px; color: #d1d5db; }
+.plan-selected ol { margin: 0; padding-left: 22px; }
+.plan-selected li { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-bottom: 1px solid #1f2937; font-size: 0.9rem; }
+.plan-sel-name { flex: 1; color: #d1d5db; }
+.plan-sel-btns { display: flex; gap: 2px; }
+.plan-sel-btns button, .plan-sel-remove { background: #1f2937; border: 1px solid #374151; color: #e5e7eb; border-radius: 4px; width: 24px; height: 24px; cursor: pointer; padding: 0; }
+.plan-sel-btns button:disabled { opacity: 0.3; cursor: default; }
+.plan-sel-remove:hover { background: #7f1d1d; }
+
+.plan-strip { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin: 15px 0 20px; }
+.plan-strip-day { width: 46px; height: 52px; border-radius: 8px; background: #111827; border: 1px solid #374151; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.plan-strip-num { font-size: 0.7rem; color: #9ca3af; font-weight: 700; }
+.plan-strip-icon { font-size: 1rem; min-height: 1.2em; }
+.plan-strip-day.done { background: #14532d; border-color: #16a34a; }
+.plan-strip-day.missed { background: #2a1215; border-color: #7f1d1d; color: #f87171; }
+.plan-strip-day.partial { border-color: #f59e0b; color: #fcd34d; }
+.plan-strip-day.today { border: 2px solid #f3f4f6; color: #60a5fa; }
+.plan-strip-day.future { opacity: 0.45; }
+.plan-finished-title { margin: 0 0 15px; color: #fcd34d; }
+.plan-stats-table td { white-space: normal; vertical-align: middle; }
+.plan-stats-table td:nth-child(5) { white-space: nowrap; }
+.plan-delta { font-weight: 800; margin-left: 4px; }
+.plan-delta.up { color: #10b981; }
+.plan-delta.down { color: #ef4444; }
+.sparkline { display: block; }
+
+.plan-day-list { list-style: none; margin: 0; padding: 0; width: 100%; }
+.plan-day-list li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: #111827; border: 1px solid #374151; border-radius: 8px; margin-bottom: 6px; text-align: left; }
+.plan-day-list li.complete { border-color: #16a34a; opacity: 0.75; }
+.plan-day-icon { width: 22px; text-align: center; }
+.plan-day-name { flex: 1; font-weight: 600; }
+.plan-day-progress { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 700; color: #9ca3af; white-space: nowrap; }
+.plan-bar { display: inline-block; width: 70px; height: 6px; background: #374151; border-radius: 3px; overflow: hidden; }
+.plan-bar > span { display: block; height: 100%; background: #10b981; }
+.plan-play { background: #2563eb; color: white; border: none; border-radius: 6px; width: 30px; height: 28px; cursor: pointer; font-size: 0.85rem; }
+.plan-play:hover { background: #1d4ed8; }
+
+.today-plan-card { width: 100%; max-width: 800px; box-sizing: border-box; background: linear-gradient(135deg, #1e1b4b, #1f2937); border: 1px solid #4f46e5; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; }
+.today-plan-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.today-plan-title { font-weight: 800; font-size: 1.05rem; cursor: pointer; }
+.today-plan-title:hover { text-decoration: underline; }
+.today-plan-day { font-size: 0.85rem; color: #a5b4fc; font-weight: 700; }
+.today-plan-done { text-align: center; font-weight: 800; color: #6ee7b7; margin-top: 8px; }
+.plan-continue { display: block; margin: 12px auto 0; font-size: 1.05rem; padding: 12px 28px; background: linear-gradient(135deg, #6366f1, #4f46e5); box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4); }
+.plan-trainer-label { font-size: 0.85rem; color: #a5b4fc; font-weight: 700; margin-top: 6px; }
+.plan-banner { border-color: #4f46e5; }
+.plan-next-btn { background: #4f46e5; }
+.plan-eye { background: #374151; }
+.plan-eye:hover { background: #4b5563; }
+
+.range-preview { max-width: 620px; max-height: 95vh; overflow-y: auto; }
+.range-preview .poker-grid { margin-top: 0; }
+.range-preview .stats-panel { margin-top: 0; align-self: center; }
+.range-preview-head { display: flex; justify-content: space-between; align-items: flex-start; }
+.range-preview-head h3 { margin: 2px 0 0; }
+.range-preview-sub { font-size: 0.8rem; color: #9ca3af; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+.range-preview-close { background: transparent; border: none; color: #9ca3af; font-size: 1.3rem; cursor: pointer; padding: 0 4px; }
+.range-preview-close:hover { color: #f3f4f6; }

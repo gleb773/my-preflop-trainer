@@ -5,6 +5,7 @@ export const STORAGE_KEYS = {
   history: 'pokerHistoryV1',
   activity: 'pokerActivityV1',
   dailyGoal: 'pokerDailyGoalV1',
+  studyPlan: 'pokerStudyPlanV1',
   autoBackup: 'pokerRangesV12_autobackup',
 };
 

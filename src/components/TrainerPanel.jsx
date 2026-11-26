@@ -41,7 +41,7 @@ function evaluate(handData, userAction, trainerMode, dice) {
   return { isCorrect: false, msg: `❌ Ошибка! (Кубик: ${dice} → ${target})` };
 }
 
-export default function TrainerPanel({ cat, sit, spot, spotData, colors, hotkeys, hotkeysEnabled, historyStats, spotRecord = 0, combosOn = true, soundOn = true, setSoundOn, onFinish }) {
+export default function TrainerPanel({ cat, sit, spot, spotData, colors, hotkeys, hotkeysEnabled, historyStats, spotRecord = 0, combosOn = true, soundOn = true, setSoundOn, handLimit = 0, planLabel, onFinish }) {
   const pool = useMemo(() => getActivePool(spotData), [spotData]);
 
   const [trainerMode, setTrainerMode] = useState('Simple');
@@ -70,6 +70,8 @@ export default function TrainerPanel({ cat, sit, spot, spotData, colors, hotkeys
   const bestStreakRef = useRef(0);
   const recordShownRef = useRef(false);
   const announceTimeoutRef = useRef(null);
+  const handsCountRef = useRef(0);
+  const finishRef = useRef(null);
 
   useEffect(() => {
     const now = Date.now();
@@ -142,6 +144,7 @@ export default function TrainerPanel({ cat, sit, spot, spotData, colors, hotkeys
     const prev = sessionRef.current[hand] || { attempts: 0, errors: 0 };
     sessionRef.current = { ...sessionRef.current, [hand]: { attempts: prev.attempts + 1, errors: prev.errors + (isCorrect ? 0 : 1) } };
     setSession(sessionRef.current);
+    handsCountRef.current += 1;
     updateStreak(isCorrect);
 
     if (!isCorrect && repeatErrors && !errorQueueRef.current.some(q => q.hand === hand)) {
@@ -150,13 +153,15 @@ export default function TrainerPanel({ cat, sit, spot, spotData, colors, hotkeys
 
     setMessage(msg);
     timeoutRef.current = setTimeout(() => {
+      // лимит рук по плану набран — завершаем сессию автоматически
+      if (handLimit > 0 && handsCountRef.current >= handLimit) { finishRef.current?.(); return; }
       nextHand();
       setMessage('Ваш ход!');
       setShowMatrix(false);
       answeringRef.current = false;
       setIsAnswering(false);
     }, NEXT_HAND_DELAY);
-  }, [deal, spotData, trainerMode, repeatErrors, nextHand, updateStreak]);
+  }, [deal, spotData, trainerMode, repeatErrors, nextHand, updateStreak, handLimit]);
 
   // Горячие клавиши (сравниваем физическую клавишу — работает в любой раскладке)
   useEffect(() => {
@@ -190,6 +195,8 @@ export default function TrainerPanel({ cat, sit, spot, spotData, colors, hotkeys
     });
   };
 
+  useEffect(() => { finishRef.current = finish; });
+
   let liveHands = 0, liveErrors = 0;
   Object.values(session).forEach(s => { liveHands += s.attempts; liveErrors += s.errors; });
 
@@ -214,7 +221,8 @@ export default function TrainerPanel({ cat, sit, spot, spotData, colors, hotkeys
         )}
         <div className="board-header"><span className="board-cat">{cat}</span><span className="board-sit">{sit}</span></div>
         <div className="board-spot-title">{spot}</div>
-        <div className="live-stats">Рук: {liveHands} · Ошибок: {liveErrors}</div>
+        {planLabel && <div className="plan-trainer-label">📚 {planLabel}</div>}
+        <div className="live-stats">Рук: {liveHands}{handLimit > 0 ? `/${handLimit}` : ''} · Ошибок: {liveErrors}</div>
         <div style={{ height: '30px', margin: '10px 0' }}><p className="message">{message}</p></div>
 
         <div className="board-cards" onClick={() => setShowMatrix(!showMatrix)}>
