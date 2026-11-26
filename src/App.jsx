@@ -137,6 +137,15 @@ function App() {
     setMode('trainer');
   };
 
+  // --- Верхние кнопки: повторное нажатие возвращает в редактор ---
+  const currentSection = mode === 'history' ? 'history'
+    : (mode === 'plan' || mode === 'planCreate' || mode === 'planEdit') ? 'plan' : null;
+  const toggleSection = (section) => {
+    if (mode === 'trainer') return;
+    setMode(currentSection === section ? 'editor' : section);
+    window.scrollTo({ top: 0 });
+  };
+
   // --- План обучения ---
   const startPlanSpot = (key) => {
     if (!activePlan) return;
@@ -296,7 +305,8 @@ function App() {
       <div className="top-bar">
         <button
           className={`daily-badge ${daily.atRisk ? 'at-risk' : ''} ${daily.todayDone ? 'done' : ''}`}
-          onClick={() => { if (mode !== 'trainer') setMode('history'); }}
+          onClick={() => toggleSection('history')}
+          disabled={mode === 'trainer'}
           title={[
             `Серия: ${daily.current} дн. подряд · рекорд: ${daily.longest}`,
             `Сегодня: ${daily.todayHands}/${daily.goal} рук`,
@@ -306,12 +316,17 @@ function App() {
           {daily.atRisk ? '⚠️' : '📅'} {daily.current}
           <span className="daily-progress">{Math.min(daily.todayHands, daily.goal)}/{daily.goal}</span>
         </button>
-        {mode !== 'trainer' && mode !== 'plan' && mode !== 'planEdit' && (
-          <button className="settings-btn" onClick={() => setMode('plan')}>📚 План</button>
-        )}
-        {mode !== 'trainer' && mode !== 'history' && (
-          <button className="settings-btn" onClick={() => setMode('history')}>📈 История</button>
-        )}
+        {[['plan', '📚 План'], ['history', '📈 История']].map(([section, label]) => (
+          <button
+            key={section}
+            className={`settings-btn ${currentSection === section ? 'active' : ''}`}
+            onClick={() => toggleSection(section)}
+            disabled={mode === 'trainer'}
+            title={mode === 'trainer' ? 'Сначала завершите тренировку' : currentSection === section ? 'Вернуться в редактор' : undefined}
+          >
+            {label}{currentSection === section && <span className="top-bar-back"> ✕</span>}
+          </button>
+        ))}
         <button className="settings-btn" onClick={() => setShowSettings(true)}>⚙️ Настройки</button>
       </div>
 
@@ -364,7 +379,7 @@ function App() {
 
       {(mode === 'planCreate' || mode === 'planEdit') && (
         <PlanEditor
-          ranges={ranges}
+          ranges={ranges} colors={actionColors}
           initial={mode === 'planEdit' ? activePlan : null}
           onSave={savePlan} onCancel={() => setMode('plan')}
         />

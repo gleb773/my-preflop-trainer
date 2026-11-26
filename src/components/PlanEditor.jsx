@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { planSpotKey, PLAN_DEFAULTS } from '../utils/studyPlan';
+import RangePreviewModal from './modals/RangePreviewModal';
 
 function NumberField({ label, value, onChange, min, max, suffix }) {
   const n = Number(value);
@@ -21,7 +22,8 @@ function NumberField({ label, value, onChange, min, max, suffix }) {
 
 const fieldValid = (v, min, max) => /^\d{1,4}$/.test(String(v).trim()) && Number(v) >= min && Number(v) <= max;
 
-export default function PlanEditor({ ranges, initial, onSave, onCancel }) {
+export default function PlanEditor({ ranges, colors, initial, onSave, onCancel }) {
+  const [preview, setPreview] = useState(null); // { cat, sit, spot }
   const [name, setName] = useState(initial?.name || 'План на неделю');
   const [selected, setSelected] = useState(initial?.spots || []);
   const [spotsPerDay, setSpotsPerDay] = useState(String(initial?.spotsPerDay ?? PLAN_DEFAULTS.spotsPerDay));
@@ -62,6 +64,15 @@ export default function PlanEditor({ ranges, initial, onSave, onCancel }) {
 
   return (
     <div className="summary-panel plan-panel">
+      {preview && (
+        <RangePreviewModal
+          title={preview.spot}
+          subtitle={`${preview.cat} / ${preview.sit}`}
+          spotData={ranges[preview.cat]?.[preview.sit]?.[preview.spot] || {}}
+          colors={colors}
+          onClose={() => setPreview(null)}
+        />
+      )}
       <h2>{initial ? '✏️ Изменить план' : '📚 Новый план обучения'}</h2>
 
       <label className="plan-field plan-name">
@@ -124,6 +135,7 @@ export default function PlanEditor({ ranges, initial, onSave, onCancel }) {
             {selected.map((s, i) => (
               <li key={planSpotKey(s)}>
                 <span className="plan-sel-name">{s.sit} / <b>{s.spot}</b></span>
+                <button className="plan-sel-eye" onClick={() => setPreview(s)} disabled={!ranges[s.cat]?.[s.sit]?.[s.spot]} title="Посмотреть ренж">👁</button>
                 {order === 'sequential' && (
                   <span className="plan-sel-btns">
                     <button onClick={() => move(i, -1)} disabled={i === 0} title="Выше">↑</button>

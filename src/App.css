@@ -124,6 +124,11 @@ body { margin: 0; background-color: #111827; color: #f3f4f6; }
 .summary-grid .grid-cell:hover { transform: scale(1.15); border-radius: 4px; box-shadow: 0 5px 15px rgba(0,0,0,0.8); z-index: 10; }
 /* --- ВЕРХНЯЯ ПАНЕЛЬ --- */
 .top-bar { display: flex; justify-content: flex-end; gap: 10px; width: 100%; max-width: 800px; margin-bottom: 10px; }
+.settings-btn.active { background: #2563eb; border-color: #3b82f6; }
+.settings-btn.active:hover { background: #1d4ed8; }
+.settings-btn:disabled, .daily-badge:disabled { opacity: 0.45; cursor: not-allowed; }
+.settings-btn:disabled:hover { background: #1f2937; }
+.top-bar-back { font-size: 0.8rem; opacity: 0.8; }
 
 .editor-toolbar { display: flex; width: 100%; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #111827; padding: 10px 15px; border-radius: 8px; box-sizing: border-box; }
 
@@ -318,6 +323,9 @@ body { margin: 0; background-color: #111827; color: #f3f4f6; }
 .plan-sel-btns button, .plan-sel-remove { background: #1f2937; border: 1px solid #374151; color: #e5e7eb; border-radius: 4px; width: 24px; height: 24px; cursor: pointer; padding: 0; }
 .plan-sel-btns button:disabled { opacity: 0.3; cursor: default; }
 .plan-sel-remove:hover { background: #7f1d1d; }
+.plan-sel-eye { background: #1f2937; border: 1px solid #374151; color: #e5e7eb; border-radius: 4px; width: 28px; height: 24px; cursor: pointer; padding: 0; font-size: 0.8rem; }
+.plan-sel-eye:hover:not(:disabled) { background: #374151; }
+.plan-sel-eye:disabled { opacity: 0.3; cursor: default; }
 
 .plan-strip { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin: 15px 0 20px; }
 .plan-strip-day { width: 46px; height: 52px; border-radius: 8px; background: #111827; border: 1px solid #374151; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
